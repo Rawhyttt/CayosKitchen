@@ -1,0 +1,147 @@
+using System;
+using UnityEngine;
+
+public class Player : MonoBehaviour, IKitchenObjectParent {
+	
+    public static Player Instance { get; private set;}
+
+    public event EventHandler<OnSelectedCounterVisualChangeEventAgrs> OnSelectedCounterVisualChange;
+    public class OnSelectedCounterVisualChangeEventAgrs : EventArgs{
+        public BaseCounter selectedCounter;
+    }
+
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private PlayerInput playerInput;
+    [SerializeField] private LayerMask counterLayerMask;
+	[SerializeField] private Transform kitchenObjectHoldPoint;
+	
+    private bool isWalking;
+    private Vector3 lastMoveDir;
+    private BaseCounter selectedCounter;
+	private KitchenObject kitchenObject;
+	
+	
+
+    private void Awake(){
+        if (Instance != null){
+            Debug.LogError("More than one player !");
+        }
+
+        Instance = this;
+    }
+
+    private void Start(){
+        playerInput.OnInteractAction += GameInput_OnInteractAction; 
+		playerInput.OnInteractAlternateAction += GameInput_OnInteractAlternateAction;
+    }
+
+    private void Update(){
+        HandleMovement();
+        HandleInteraction();
+    }
+
+    private void GameInput_OnInteractAction(object sender, System.EventArgs e){
+        if (selectedCounter != null){
+            selectedCounter.Interact(this);
+        }
+    }
+	
+	private void GameInput_OnInteractAlternateAction(object sender, System.EventArgs e){
+        if (selectedCounter != null){
+            selectedCounter.InteractAlternate(this);
+        }
+    }
+
+    private void HandleInteraction(){
+        Vector2 inputVector = playerInput.GetMovementVectorNormalized();
+        Vector3 moveDir = new Vector3(inputVector.x, 0f, inputVector.y);
+
+        if (moveDir != Vector3.zero){
+            lastMoveDir = moveDir;
+        }
+
+        float interactionDistance = 2f;
+        if(Physics.Raycast(transform.position, lastMoveDir, out RaycastHit raycastHitInfo, interactionDistance, counterLayerMask)){
+            if(raycastHitInfo.transform.TryGetComponent(out BaseCounter baseCounter)){
+                if(baseCounter != selectedCounter){
+                    SetSelectedCounter(baseCounter);
+                }
+            }else{
+                SetSelectedCounter(null);
+            }
+        }
+        else{
+            SetSelectedCounter(null);
+        }
+
+    }
+
+    private void HandleMovement(){
+        Vector2 inputVector = playerInput.GetMovementVectorNormalized();
+
+        Vector3 moveDir = new Vector3(inputVector.x, 0f, inputVector.y);
+
+        float moveDistance = moveSpeed * Time.deltaTime;
+        float playerHight = 2f;
+        float playerRadius = .8f;
+
+        bool canMove = !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHight, playerRadius, moveDir, moveDistance);
+            
+        if (!canMove)
+        {
+            Vector3 moveDirX = new Vector3(moveDir.x,0,0).normalized;
+            canMove = moveDir.x != 0 && !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHight, playerRadius, moveDirX, moveDistance);
+            if (canMove){
+                moveDir = moveDirX;
+            }else{
+                Vector3 moveDirZ = new Vector3(0,0,moveDir.z).normalized;
+                canMove = moveDir.z != 0 && !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHight, playerRadius, moveDirZ, moveDistance);
+
+                if (canMove){
+                    moveDir = moveDirZ;
+                }
+            }
+        }
+
+        if (canMove){
+            transform.position += moveDir * moveDistance;
+        }
+
+        isWalking = moveDir != Vector3.zero;
+
+        float rotationSpeed = 12f;
+        transform.forward = Vector3.Slerp(transform.forward, moveDir, rotationSpeed * Time.deltaTime);
+    }
+
+    public bool IsWalking(){
+        return isWalking;
+    }
+
+    private void SetSelectedCounter(BaseCounter selectedCounter){
+        this.selectedCounter = selectedCounter;
+
+        OnSelectedCounterVisualChange?.Invoke(this, new OnSelectedCounterVisualChangeEventAgrs{
+            selectedCounter = selectedCounter
+        });
+    }
+	
+	public Transform GetKitchenObjectFollowTransform(){
+		return kitchenObjectHoldPoint;
+	}
+	
+	public void SetKitchenObject(KitchenObject kitchenObject){
+		this.kitchenObject = kitchenObject;
+	}
+	
+	public KitchenObject GetKitchenObject(){
+		return kitchenObject;
+	}
+	
+	public void ClearKitchenObject(){
+		kitchenObject = null;
+	}
+	
+	public bool HasKitchenObject(){
+		return kitchenObject != null;
+	}
+}
