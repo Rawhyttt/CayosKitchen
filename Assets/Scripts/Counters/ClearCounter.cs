@@ -14,14 +14,25 @@ public class ClearCounter : BaseCounter {
 		}else{
 			//There is something on the counetr.
 			if(player.HasKitchenObject()){
-                if (player.GetKitchenObject() is PlateKitchenObject)
-                {
-					PlateKitchenObject plateKitchenObject = player.GetKitchenObject() as PlateKitchenObject;
+				//player has somthing.
+				if (player.GetKitchenObject().TryGetPlate(out PlateKitchenObject plateKitchenObject))
+				{
 					if (plateKitchenObject.TryAddIngredient(GetKitchenObject().GetKitchenObjectsSO()))
 					{
-                        GetKitchenObject().DestroySelf();
+						GetKitchenObject().DestroySelf();
+					}
+				}
+				else 
+				{
+					//Player has something else than a plate.
+					if (GetKitchenObject().TryGetPlate(out plateKitchenObject)) 
+					{
+						//counter has a plate.
+                        if (plateKitchenObject.TryAddIngredient(player.GetKitchenObject().GetKitchenObjectsSO()))
+                        {
+                            player.GetKitchenObject().DestroySelf();
+                        }
                     }
-					
                 }
             }
             else{

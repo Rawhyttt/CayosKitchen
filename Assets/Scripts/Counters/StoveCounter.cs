@@ -92,8 +92,8 @@ public class StoveCounter : BaseCounter, IHasProgress {
 		if(!HasKitchenObject()){
 			//There is nothing on the counter.
 			if(player.HasKitchenObject()){
-				//Player has something.
-				if(IsFryableKitchenObject(player.GetKitchenObject().GetKitchenObjectsSO())){
+                //Player has something.        
+                if (IsFryableKitchenObject(player.GetKitchenObject().GetKitchenObjectsSO())){
 					player.GetKitchenObject().SetKitchenObjectParent(this);
 					fryingRecipeSO = GetFryingRecipeSOWithInput(GetKitchenObject().GetKitchenObjectsSO());
 					
@@ -114,8 +114,28 @@ public class StoveCounter : BaseCounter, IHasProgress {
 		}else{
 			//There is something on the counetr.
 			if(player.HasKitchenObject()){
-				//Player also has something.
-			}else{
+                //Player also has something.
+                if (player.GetKitchenObject().TryGetPlate(out PlateKitchenObject plateKitchenObject))
+                {
+                    if (plateKitchenObject.TryAddIngredient(GetKitchenObject().GetKitchenObjectsSO()))
+                    {
+                        GetKitchenObject().DestroySelf();
+
+                        state = State.Idle;
+
+                        OnStateChange?.Invoke(this, new OnStateChangeEventArgs
+                        {
+                            state = state
+                        });
+
+                        OnProgressChanged?.Invoke(this, new IHasProgress.OnProgressChangedEventArgs
+                        {
+                            progressNormalized = 0f
+                        });
+                    }
+                }
+            }
+            else{
 				//Player has nothing.
 				GetKitchenObject().SetKitchenObjectParent(player);
 				state = State.Idle;

@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 
 public class CuttingCounter : BaseCounter, IHasProgress {
+
+	public static event EventHandler OnAnyCut;
 	
 	public event EventHandler OnCuttingAction;
 	
@@ -32,8 +34,16 @@ public class CuttingCounter : BaseCounter, IHasProgress {
 		}else{
 			//There is something on the counetr.
 			if(player.HasKitchenObject()){
-				//Player also has something.
-			}else{
+                //Player also has something.
+                if (player.GetKitchenObject().TryGetPlate(out PlateKitchenObject plateKitchenObject))
+                {
+                    if (plateKitchenObject.TryAddIngredient(GetKitchenObject().GetKitchenObjectsSO()))
+                    {
+                        GetKitchenObject().DestroySelf();
+                    }
+                }
+            }
+            else{
 				//Player has nothing.
 				GetKitchenObject().SetKitchenObjectParent(player);
 				OnProgressChanged?.Invoke(this, new IHasProgress.OnProgressChangedEventArgs{
@@ -47,7 +57,9 @@ public class CuttingCounter : BaseCounter, IHasProgress {
 		if(HasKitchenObject()){
 			if(IsCuttableKitchenObject(GetKitchenObject().GetKitchenObjectsSO())){
 				OnCuttingAction?.Invoke(this, EventArgs.Empty);
-				cuttingProgress++;
+				OnAnyCut?.Invoke(this, EventArgs.Empty);
+
+                cuttingProgress++;
 				CuttingRecipeSO cuttingRecipeSO = GetCuttingRecipeSOWithInput(GetKitchenObject().GetKitchenObjectsSO());
 				
 				OnProgressChanged?.Invoke(this, new IHasProgress.OnProgressChangedEventArgs{
