@@ -5,8 +5,14 @@ using UnityEngine.EventSystems;
 public class BaseCounter : MonoBehaviour, IKitchenObjectParent {
 
 	public static event EventHandler OnAnyObjectPlacedHere;
-	
-	[SerializeField] private Transform onTopOfCounter;
+
+    public static void ResetStaticData()
+    {
+        OnAnyObjectPlacedHere = null;
+    }
+
+
+    [SerializeField] private Transform onTopOfCounter;
 	
 	private KitchenObject kitchenObject; 
 	
