@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -37,6 +38,8 @@ public class OptionsUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI interactAltText;
     [SerializeField] private TextMeshProUGUI pauseText;
 
+    private Action onCloseButtonAction;
+
 
     private void Awake()
     {
@@ -56,6 +59,7 @@ public class OptionsUI : MonoBehaviour
         closeButton.onClick.AddListener(() =>
         {
             Hide();
+            onCloseButtonAction();
         });
 
         upButton.onClick.AddListener(() => { RebindBinding(PlayerInput.Binding.Move_Up); });
@@ -100,8 +104,10 @@ public class OptionsUI : MonoBehaviour
         pauseText.text = PlayerInput.Instance.GetBindingText(PlayerInput.Binding.Pause);
     }
 
-    public void Show()
+    public void Show(Action onCloseButtonAction)
     {
+        this.onCloseButtonAction = onCloseButtonAction;
+
         gameObject.SetActive(true);
     }
 
